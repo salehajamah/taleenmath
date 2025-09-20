@@ -1,3 +1,107 @@
+// --- Custom Dialog Functions --- //
+function showCustomConfirm(message, title = "تأكيد", icon = "❓") {
+    return new Promise((resolve) => {
+        const confirmTitle = document.getElementById('confirm-title');
+        const confirmMessage = document.getElementById('confirm-message');
+        const confirmIcon = document.getElementById('confirm-icon');
+        const confirmYesBtn = document.getElementById('confirm-yes-btn');
+        const confirmNoBtn = document.getElementById('confirm-no-btn');
+        
+        confirmTitle.textContent = title;
+        confirmMessage.textContent = message;
+        confirmIcon.textContent = icon;
+        
+        customConfirmModal.style.display = 'block';
+        
+        const handleYes = () => {
+            customConfirmModal.style.display = 'none';
+            confirmYesBtn.removeEventListener('click', handleYes);
+            confirmNoBtn.removeEventListener('click', handleNo);
+            resolve(true);
+        };
+        
+        const handleNo = () => {
+            customConfirmModal.style.display = 'none';
+            confirmYesBtn.removeEventListener('click', handleYes);
+            confirmNoBtn.removeEventListener('click', handleNo);
+            resolve(false);
+        };
+        
+        confirmYesBtn.addEventListener('click', handleYes);
+        confirmNoBtn.addEventListener('click', handleNo);
+    });
+}
+
+function showCustomAlert(message, title = "تنبيه", icon = "ℹ️") {
+    return new Promise((resolve) => {
+        const alertTitle = document.getElementById('alert-title');
+        const alertMessage = document.getElementById('alert-message');
+        const alertIcon = document.getElementById('alert-icon');
+        const alertOkBtn = document.getElementById('alert-ok-btn');
+        
+        alertTitle.textContent = title;
+        alertMessage.textContent = message;
+        alertIcon.textContent = icon;
+        
+        customAlertModal.style.display = 'block';
+        
+        const handleOk = () => {
+            customAlertModal.style.display = 'none';
+            alertOkBtn.removeEventListener('click', handleOk);
+            resolve();
+        };
+        
+        alertOkBtn.addEventListener('click', handleOk);
+    });
+}
+
+// --- Utility Functions --- //
+function convertArabicToEnglishNumbers(str) {
+    // Convert Arabic-Indic numerals (٠١٢٣٤٥٦٧٨٩) to English numerals (0123456789)
+    const arabicNumbers = '٠١٢٣٤٥٦٧٨٩';
+    const englishNumbers = '0123456789';
+    
+    return str.replace(/[٠-٩]/g, (match) => {
+        return englishNumbers[arabicNumbers.indexOf(match)];
+    });
+}
+
+function addInputEnhancements(input) {
+    // Auto-convert Arabic numbers to English numbers
+    input.addEventListener('input', (e) => {
+        const originalValue = e.target.value;
+        const convertedValue = convertArabicToEnglishNumbers(originalValue);
+        
+        if (originalValue !== convertedValue) {
+            e.target.value = convertedValue;
+            // Trigger input event to ensure validation works
+            e.target.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+    });
+    
+    // Also handle paste events
+    input.addEventListener('paste', (e) => {
+        setTimeout(() => {
+            const originalValue = e.target.value;
+            const convertedValue = convertArabicToEnglishNumbers(originalValue);
+            if (originalValue !== convertedValue) {
+                e.target.value = convertedValue;
+            }
+        }, 0);
+    });
+    
+    // Add visual feedback for mobile users
+    input.addEventListener('focus', () => {
+        input.style.borderColor = 'var(--primary-color)';
+        input.style.boxShadow = '0 0 5px rgba(74, 144, 226, 0.3)';
+    });
+    
+    input.addEventListener('blur', () => {
+        input.style.borderColor = 'var(--border-color)';
+        input.style.boxShadow = 'none';
+    });
+}
+
 // --- Sound Effects --- //
 function playSound(type) {
     // Create AudioContext for sound generation
@@ -78,6 +182,8 @@ const certBackToMainBtn = document.getElementById('cert-back-to-main-btn');
 const saveGuideModal = document.getElementById('save-guide-modal');
 const closeGuideModalBtn = document.getElementById('close-guide-modal-btn');
 const resultsModal = document.getElementById('results-modal');
+const customConfirmModal = document.getElementById('custom-confirm-modal');
+const customAlertModal = document.getElementById('custom-alert-modal');
 const errorList = document.getElementById('error-list');
 const retryQuizBtn = document.getElementById('retry-quiz-btn');
 const modalBackToMainBtn = document.getElementById('modal-back-to-main-btn');
@@ -91,7 +197,7 @@ const visitCountEl = document.getElementById('visit-count');
 let currentTable = 0;
 let questions = [];
 let timerInterval = null;
-let timeRemaining = 300; // 5 minutes in seconds
+let timeRemaining = 90; // 1.5 minutes in seconds
 
 // --- Visit Counter --- //
 function initVisitCounter() {
@@ -192,7 +298,7 @@ function startQuiz(tableNumber) {
     generateQuestions(tableNumber);
     
     // Reset timer
-    timeRemaining = 300;
+    timeRemaining = 90; // 1.5 minutes
     updateTimerDisplay();
     timerEnabled.checked = false;
     timerDisplay.style.display = 'none';
@@ -218,14 +324,15 @@ function startTimer() {
         timeRemaining--;
         updateTimerDisplay();
         
-        if (timeRemaining <= 60) {
+        if (timeRemaining <= 30) { // Warning in last 30 seconds
             timerDisplay.classList.add('warning');
         }
         
         if (timeRemaining <= 0) {
             stopTimer();
-            alert('انتهى الوقت! سيتم إنهاء الاختبار تلقائياً.');
-            finishQuizBtn.click();
+            showCustomAlert('انتهى الوقت! سيتم إنهاء الاختبار تلقائياً.', 'انتهاء الوقت', '⏰').then(() => {
+                finishQuizBtn.click();
+            });
         }
     }, 1000);
 }
@@ -270,11 +377,17 @@ function generateQuestions(table) {
         questionEl.className = 'quiz-question';
         questionEl.innerHTML = `
             <label for="${questionData.id}">${questionData.num1} &times; ${questionData.num2} =</label>
-            <input type="number" id="${questionData.id}" name="${questionData.id}" required>
+            <input type="number" id="${questionData.id}" name="${questionData.id}" 
+                   inputmode="numeric" pattern="[0-9]*" autocomplete="off" 
+                   placeholder="؟" dir="ltr" required>
         `;
         
-        // Add enter key navigation
+        // Add enter key navigation and number conversion
         const input = questionEl.querySelector('input');
+        
+        // Apply input enhancements
+        addInputEnhancements(input);
+        
         input.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
@@ -295,7 +408,7 @@ function generateQuestions(table) {
 }
 
 // --- Results Logic --- //
-finishQuizBtn.addEventListener('click', () => {
+finishQuizBtn.addEventListener('click', async () => {
     // Clear any previous error highlighting
     document.querySelectorAll('.quiz-question input').forEach(input => {
         input.classList.remove('error');
@@ -314,7 +427,8 @@ finishQuizBtn.addEventListener('click', () => {
     // Show confirmation dialog if there are empty fields
     if (emptyFields.length > 0) {
         const confirmMessage = `هناك ${emptyFields.length} أسئلة لم تجيبي عليها. هل تريدين المتابعة وإنهاء الاختبار؟`;
-        if (!confirm(confirmMessage)) {
+        const shouldContinue = await showCustomConfirm(confirmMessage, 'أسئلة غير مكتملة', '⚠️');
+        if (!shouldContinue) {
             // Scroll to first empty field
             if (emptyFields.length > 0) {
                 document.getElementById(emptyFields[0].id).scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -324,7 +438,8 @@ finishQuizBtn.addEventListener('click', () => {
     }
 
     // Final confirmation before submitting
-    if (!confirm('هل أنت متأكدة من إنهاء الاختبار؟')) {
+    const finalConfirm = await showCustomConfirm('هل أنت متأكدة من إنهاء الاختبار؟', 'إنهاء الاختبار', '📝');
+    if (!finalConfirm) {
         return;
     }
 
@@ -457,17 +572,33 @@ function saveCertificateAsImage() {
         const a = document.createElement('a');
         a.href = url;
         a.download = `شهادة_جدول_الضرب_${currentTable}_${studentName}_${new Date().getTime()}.png`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        
+        // For mobile browsers, show instructions instead of direct download
+        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+            // Mobile device - show custom download instructions
+            showCustomAlert(
+                'تم إنشاء الشهادة! اضغط على الرابط التالي لحفظها، أو استخدم خيار "التقاط صورة للشاشة" من الأعلى.',
+                'تحميل الشهادة',
+                '📱'
+            ).then(() => {
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+        } else {
+            // Desktop - direct download
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showCustomAlert('تم حفظ الشهادة بنجاح! 🎉', 'نجح الحفظ', '✅');
+        }
         
         // Restore original state
         buttons.style.display = 'flex';
         nameInput.style.borderBottom = '2px solid var(--primary-color)';
         nameInput.removeAttribute('readonly');
-        
-        alert('تم حفظ الشهادة بنجاح! 🎉');
     }, 'image/png');
 }
 
@@ -518,5 +649,14 @@ window.addEventListener('click', (event) => {
     }
     if (event.target == saveGuideModal) {
         saveGuideModal.style.display = 'none';
+    }
+    if (event.target == customConfirmModal) {
+        // Don't close confirm modals by clicking outside
+        // They need explicit user choice
+    }
+    if (event.target == customAlertModal) {
+        customAlertModal.style.display = 'none';
+        // Trigger the OK button click to resolve promise
+        document.getElementById('alert-ok-btn').click();
     }
 });
