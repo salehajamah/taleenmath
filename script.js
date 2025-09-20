@@ -72,8 +72,11 @@ const quizForm = document.getElementById('quiz-form');
 const finishQuizBtn = document.getElementById('finish-quiz-btn');
 const certificateScreen = document.getElementById('certificate-screen');
 const certificateText = document.getElementById('certificate-text');
-const printCertificateBtn = document.getElementById('print-certificate-btn');
+const saveCertificateBtn = document.getElementById('save-certificate-btn');
+const screenshotGuideBtn = document.getElementById('screenshot-guide-btn');
 const certBackToMainBtn = document.getElementById('cert-back-to-main-btn');
+const saveGuideModal = document.getElementById('save-guide-modal');
+const closeGuideModalBtn = document.getElementById('close-guide-modal-btn');
 const resultsModal = document.getElementById('results-modal');
 const errorList = document.getElementById('error-list');
 const retryQuizBtn = document.getElementById('retry-quiz-btn');
@@ -371,6 +374,103 @@ function displayErrorModal(errors) {
     resultsModal.style.display = 'block';
 }
 
+// --- Certificate Functions --- //
+function saveCertificateAsImage() {
+    // Get the certificate element
+    const certificate = document.querySelector('.certificate');
+    const nameInput = document.getElementById('student-name-cert');
+    
+    // Temporarily hide buttons and style for saving
+    const buttons = document.querySelector('.certificate-buttons');
+    buttons.style.display = 'none';
+    nameInput.style.border = 'none';
+    nameInput.setAttribute('readonly', 'true');
+    
+    // Use html2canvas library alternative - create canvas manually
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Set canvas size
+    canvas.width = 800;
+    canvas.height = 600;
+    
+    // Fill background
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--card-bg');
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Add border
+    ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--secondary-color');
+    ctx.lineWidth = 10;
+    ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+    
+    // Add text content
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--text-color');
+    ctx.textAlign = 'center';
+    ctx.direction = 'rtl';
+    
+    // Title
+    ctx.font = 'bold 48px Arial';
+    ctx.fillText('🏆', canvas.width / 2, 100);
+    
+    ctx.font = 'bold 36px Arial';
+    ctx.fillText('شهادة إتقان', canvas.width / 2, 160);
+    
+    // Student name
+    const studentName = nameInput.value || 'الطالب/ة';
+    ctx.font = '24px Arial';
+    ctx.fillText(`اسم الطالب/ة: ${studentName}`, canvas.width / 2, 220);
+    
+    // Achievement text
+    ctx.font = '20px Arial';
+    const achievementText = `تهانينا! لقد أتقنتِ جدول الضرب للعدد ${currentTable} بنجاح باهر.`;
+    
+    // Split text for multiple lines
+    const words = achievementText.split(' ');
+    let line = '';
+    let y = 280;
+    
+    for (let word of words) {
+        const testLine = line + word + ' ';
+        const metrics = ctx.measureText(testLine);
+        const testWidth = metrics.width;
+        
+        if (testWidth > canvas.width - 100 && line !== '') {
+            ctx.fillText(line, canvas.width / 2, y);
+            line = word + ' ';
+            y += 30;
+        } else {
+            line = testLine;
+        }
+    }
+    ctx.fillText(line, canvas.width / 2, y);
+    
+    // Add date and school info
+    ctx.font = '16px Arial';
+    const today = new Date().toLocaleDateString('ar-SA');
+    ctx.fillText(`التاريخ: ${today}`, canvas.width / 2, y + 80);
+    ctx.fillText('المدرسة: الابتدائية 65', canvas.width / 2, y + 110);
+    ctx.fillText('معلمة المادة: الأستاذة / مها اليامي', canvas.width / 2, y + 140);
+    
+    // Convert to blob and download
+    canvas.toBlob((blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `شهادة_جدول_الضرب_${currentTable}_${studentName}_${new Date().getTime()}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        // Restore original state
+        buttons.style.display = 'flex';
+        nameInput.style.borderBottom = '2px solid var(--primary-color)';
+        nameInput.removeAttribute('readonly');
+        
+        alert('تم حفظ الشهادة بنجاح! 🎉');
+    }, 'image/png');
+}
+
 // --- Event Listeners for Buttons --- //
 
 // Back to main menu from certificate
@@ -379,20 +479,22 @@ certBackToMainBtn.addEventListener('click', () => {
     showScreen('selection-screen');
 });
 
-// Print certificate
-printCertificateBtn.addEventListener('click', () => {
+// Save certificate as image
+saveCertificateBtn.addEventListener('click', () => {
     playSound('click');
-    const nameInput = document.getElementById('student-name-cert');
-    nameInput.style.border = 'none';
-    nameInput.setAttribute('readonly', 'true');
+    saveCertificateAsImage();
+});
 
-    // Temporarily hide buttons for printing
-    document.querySelector('.certificate-buttons').style.display = 'none';
-    window.print();
-    document.querySelector('.certificate-buttons').style.display = 'flex';
+// Show screenshot guide
+screenshotGuideBtn.addEventListener('click', () => {
+    playSound('click');
+    saveGuideModal.style.display = 'block';
+});
 
-    nameInput.style.borderBottom = '2px solid var(--primary-color)';
-    nameInput.removeAttribute('readonly');
+// Close screenshot guide modal
+closeGuideModalBtn.addEventListener('click', () => {
+    playSound('click');
+    saveGuideModal.style.display = 'none';
 });
 
 // Retry quiz from modal
@@ -413,5 +515,8 @@ modalBackToMainBtn.addEventListener('click', () => {
 window.addEventListener('click', (event) => {
     if (event.target == resultsModal) {
         resultsModal.style.display = 'none';
+    }
+    if (event.target == saveGuideModal) {
+        saveGuideModal.style.display = 'none';
     }
 });

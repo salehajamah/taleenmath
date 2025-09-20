@@ -67,7 +67,8 @@
                 <p id="certificate-text" class="certificate-body"></p>
                 <div class="certificate-buttons">
                     <button id="cert-back-to-main-btn" class="btn">العودة للقائمة الرئيسية</button>
-                    <button id="print-certificate-btn" class="btn btn-secondary">اطبع الشهادة</button>
+                    <button id="save-certificate-btn" class="btn btn-secondary">💾 حفظ الشهادة</button>
+                    <button id="screenshot-guide-btn" class="btn btn-success">📸 كيفية حفظ صورة</button>
                 </div>
             </div>
         </section>
@@ -86,6 +87,47 @@
             <div class="modal-buttons">
                 <button id="retry-quiz-btn" class="btn btn-primary">حاول مرة أخرى</button>
                 <button id="modal-back-to-main-btn" class="btn">العودة للقائمة الرئيسية</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="save-guide-modal" class="modal">
+        <div class="modal-content save-guide-content">
+            <div class="modal-header">
+                <span class="modal-icon">📱</span>
+                <h2>طرق حفظ الشهادة</h2>
+            </div>
+            <div class="save-methods">
+                <div class="method-card">
+                    <div class="method-header">
+                        <span class="method-icon">📸</span>
+                        <h3>التقاط صورة للشاشة</h3>
+                    </div>
+                    <div class="method-steps">
+                        <h4>📱 للأندرويد:</h4>
+                        <p>• اضغط على زر الطاقة + زر خفض الصوت معاً</p>
+                        <p>• أو اسحب من أعلى الشاشة واختر "لقطة شاشة"</p>
+                        
+                        <h4>🍎 للآيفون:</h4>
+                        <p>• اضغط على الزر الجانبي + زر رفع الصوت معاً</p>
+                        <p>• أو استخدم "AssistiveTouch" من الإعدادات</p>
+                    </div>
+                </div>
+                
+                <div class="method-card">
+                    <div class="method-header">
+                        <span class="method-icon">💾</span>
+                        <h3>حفظ كصورة</h3>
+                    </div>
+                    <div class="method-steps">
+                        <p>• اضغط زر "حفظ الشهادة" أعلاه</p>
+                        <p>• ستتم معالجة الشهادة وتحويلها لصورة</p>
+                        <p>• اختر مكان الحفظ أو المشاركة</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-buttons">
+                <button id="close-guide-modal-btn" class="btn btn-primary">فهمت</button>
             </div>
         </div>
     </div>
